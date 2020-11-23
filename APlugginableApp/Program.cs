@@ -15,31 +15,36 @@ namespace APlugginableApp
     {
         static void Main(string[] args)
         {
-            var plugins = GetAvailablePlugins();
 
+            Parser.Default.ParseArguments<ListOptions, RunOptions, InteractiveOptions>(args)
+                .WithParsed<ListOptions>(DoListOptions)
+                .WithParsed<RunOptions>(DoRunOptions)
+                .WithParsed<InteractiveOptions>(DoInteractiveOptions)
+                .WithNotParsed(HandleErrors);
+        }
+
+        private static void DoInteractiveOptions(InteractiveOptions obj)
+        {
+            var plugins = GetAvailablePlugins();
+            RunREPL(plugins);
+        }
+
+        private static void RunREPL(IEnumerable<PluginDescriptor> plugins)
+        {
             var prompt = "apa> ";
             var compList = plugins.Select(p => p.ExecCommand).ToList();
             var startupMsg = "Enter command to execute";
             InteractivePrompt.Run(
                 ((strCmd, listCmd, completions) =>
                 {
-                    foreach (var c in strCmd.Split(' '))
-                        if (!completions.Contains(c))
-                            completions.Add(c);
-
                     var command = ParseCommand(strCmd);
                     if (command == null)
                     {
-                        return $" >>> {strCmd} not supported<<< {Environment.NewLine}";
+                        return $"{strCmd} is not supported {Environment.NewLine}";
                     }
 
-                    return $"{command.Plugin.Execute(command.Argument)}  {Environment.NewLine}";
+                    return $"{command.Plugin.Execute(command.Argument)} {Environment.NewLine}";
                 }), prompt, startupMsg, compList);
-
-            Parser.Default.ParseArguments<ListOptions, RunOptions>(args)
-                .WithParsed<ListOptions>(DoListOptions)
-                .WithParsed<RunOptions>(DoRunOptions)
-                .WithNotParsed(HandleErrors);
         }
 
         private static CommandDescriptor ParseCommand(string commandString)
@@ -75,12 +80,20 @@ namespace APlugginableApp
         {
             var plugins = GetAvailablePlugins();
             Console.WriteLine("List of available plugins: ");
-            Array.ForEach(plugins.ToArray(), Console.WriteLine);
+            Array.ForEach(plugins.Select(p => $"- {p.ExecCommand}").ToArray(), Console.WriteLine);
         }
 
         private static void DoRunOptions(RunOptions args)
         {
+            var plugins = GetAvailablePlugins();
+            var plugin = plugins.FirstOrDefault(p => p.ExecCommand.ToLower() == args.Plugin.ToLower());
+            if(plugin == null)
+            {
+                Console.WriteLine($"Plugin {plugin} not supported");
+                return;
+            }
 
+            Console.WriteLine(plugin.Execute(args.Argument));
         }
 
         private static IEnumerable<PluginDescriptor> GetAvailablePlugins()

@@ -10,5 +10,8 @@ namespace APlugginableApp.CLI
     {
         [Option('p', "plugin")]
         public string Plugin { get; set; }
+
+        [Option('a', "argument")]
+        public string Argument { get; set; }
     }
 }
