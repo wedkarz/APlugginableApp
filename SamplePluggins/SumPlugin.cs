@@ -7,6 +7,8 @@ namespace APlugginableApp.Plugins
 {
     class SumPlugin : IPlugin
     {
+        public string Description => "Splits input by ‘+’ sign, parses numbers and calculates sum of them";
+
         public string Execute(string input)
         {
             var substrings = input.Split('+').Select(s => s.Trim());

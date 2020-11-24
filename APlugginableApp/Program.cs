@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Runtime.Remoting;
 using System.Text.RegularExpressions;
 
 namespace APlugginableApp
@@ -15,7 +16,6 @@ namespace APlugginableApp
     {
         static void Main(string[] args)
         {
-
             Parser.Default.ParseArguments<ListOptions, RunOptions, InteractiveOptions>(args)
                 .WithParsed<ListOptions>(DoListOptions)
                 .WithParsed<RunOptions>(DoRunOptions)
@@ -52,8 +52,8 @@ namespace APlugginableApp
             string methodPattern = @"(?<pluginName>\w+)\s*\(""(?<pluginArgument>.*)""\)";
             Regex r = new Regex(methodPattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
             Match m = r.Match(commandString.Replace(Environment.NewLine, ""));
-            
-            if(!m.Success)
+
+            if (!m.Success)
             {
                 return null;
             }
@@ -64,7 +64,7 @@ namespace APlugginableApp
             var availablePlugins = GetAvailablePlugins();
             var matchedPluggin = availablePlugins.FirstOrDefault(p => p.ExecCommand.ToLower() == pluginName.ToLower());
 
-            if(matchedPluggin == null)
+            if (matchedPluggin == null)
             {
                 return null;
             }
@@ -79,15 +79,26 @@ namespace APlugginableApp
         private static void DoListOptions(ListOptions args)
         {
             var plugins = GetAvailablePlugins();
-            Console.WriteLine("List of available plugins: ");
-            Array.ForEach(plugins.Select(p => $"- {p.ExecCommand}").ToArray(), Console.WriteLine);
+            Array.ForEach(plugins.Select(p => $"{p.ExecCommand}\t\t{p.Description}").ToArray(), Console.WriteLine);
         }
 
         private static void DoRunOptions(RunOptions args)
         {
+            if (args.Plugin == null || args.Plugin.Length == 0)
+            {
+                Console.WriteLine("No plugins specified.\n\nUsage: apa run -p [plugin] -a [argument]\n");
+                return;
+            }
+
+            if (args.Argument == null || args.Argument.Length == 0)
+            {
+                Console.WriteLine($"No arguments specified for plugin: {args.Plugin}\n\nUsage: apa run -p {args.Plugin} -a [argument]\n");
+                return;
+            }
+
             var plugins = GetAvailablePlugins();
             var plugin = plugins.FirstOrDefault(p => p.ExecCommand.ToLower() == args.Plugin.ToLower());
-            if(plugin == null)
+            if (plugin == null)
             {
                 Console.WriteLine($"Plugin {plugin} not supported");
                 return;
@@ -100,22 +111,20 @@ namespace APlugginableApp
         {
             var exeDirectoryPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var pluginsPath = Path.Combine(exeDirectoryPath, "Pluggins");
-            if(!Directory.Exists(pluginsPath))
+            if (!Directory.Exists(pluginsPath))
             {
                 return new List<PluginDescriptor>();
             }
 
             var potentialPlugginFilePaths = Directory.GetFiles(pluginsPath, "*.dll");
-            var potentialPlugginAssemblies = potentialPlugginFilePaths.Select(LoadAssembly);
+            var potentialPlugginAssemblies = potentialPlugginFilePaths.Select(LoadAssembly).Where(a => a != null);
 
-            var pluginTypePrefix = "Plugin";
-
-            var plugins = potentialPlugginAssemblies.Where(DefinesPluggins).SelectMany(ExtractPluggins);
+            var plugins = potentialPlugginAssemblies.Where(ValidatePluginInterface).SelectMany(ExtractPluggins);
 
             return plugins;
         }
 
-        private static bool DefinesPluggins(Assembly assembly)
+        private static bool ValidatePluginInterface(Assembly assembly)
         {
             var pluginInterface = assembly.GetTypes().FirstOrDefault(t => t.Name == "IPlugin");
             if (pluginInterface == null) return false;
@@ -127,8 +136,13 @@ namespace APlugginableApp
             var isExecuteMethodMatchingParams = plugginInterfaceExecuteMethodParams.Length == 1 && plugginInterfaceExecuteMethodParams[0].ParameterType == typeof(string);
             var isExecuteMethodMatchingReturnType = plugginInterfaceExecuteMethod.ReturnType == typeof(string);
 
-            return isExecuteMethodMatchingParams && isExecuteMethodMatchingReturnType;
+            var pluginInterfaceDescriptionProperty = pluginInterface.GetProperty("Description");
+            if (pluginInterfaceDescriptionProperty == null) return false;
+            var isDescriprionPropertyValid = pluginInterfaceDescriptionProperty.PropertyType == typeof(string) && pluginInterfaceDescriptionProperty.CanRead;
+
+            return isExecuteMethodMatchingParams && isExecuteMethodMatchingReturnType && isDescriprionPropertyValid;
         }
+
 
         private static IEnumerable<PluginDescriptor> ExtractPluggins(Assembly assembly)
         {
@@ -145,7 +159,13 @@ namespace APlugginableApp
         private static Assembly LoadAssembly(string path)
         {
             PluginLoadContext loadContext = new PluginLoadContext(path);
-            return loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(path)));
+            try
+            {
+                return loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(path)));
+            } catch(Exception e)
+            {
+                return null;
+            }
         }
     }
 
@@ -166,6 +186,32 @@ namespace APlugginableApp
         private Type _pluginType;
 
         internal string ExecCommand { get; }
+
+
+        private object _pluginInstance = null;
+        private object PluginInstance {
+            get { 
+                if(_pluginInstance == null)
+                {
+                    _pluginInstance = Activator.CreateInstance(_pluginType);
+                }
+
+                return _pluginInstance;
+            } 
+        }
+
+        private string _description = null;
+        internal string Description { 
+            get {
+                if (_description == null)
+                {
+                    var descriptionPropertyInfo = _pluginType.GetProperty("Description");
+                    _description = (string)descriptionPropertyInfo.GetValue(PluginInstance);
+                }
+
+                return _description;
+            } 
+        }
 
         internal string Execute(string input)
         {
@@ -202,7 +248,13 @@ namespace APlugginableApp
             string assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
             if (assemblyPath != null)
             {
-                return LoadFromAssemblyPath(assemblyPath);
+                try
+                {
+                    return LoadFromAssemblyPath(assemblyPath);
+                } catch(Exception e)
+                {
+                    return null;
+                }
             }
 
             return null;
