@@ -5,7 +5,7 @@ A Plugginable App demonstrates ability to run plugins that transform text input 
 
 Invoking *apa.exe* will give you hint what is available.
 
-```
+```powershell
 Usage: apa [command] [options]
 
 Options:
@@ -25,7 +25,7 @@ Run 'apa [command] -?|-h|--help' for more information about a command.
   
   1) list all available plugins: *apa list*. Depending on installed plugins you will see a list of them. e.g.
   
-  ```
+  ```powershell
 Politics        Hides names of most popuplar political parties in Poland
 Count           Counts characters in input string
 Reverse         Reverses input
@@ -37,13 +37,13 @@ Sum             Splits input by `+' sign, parses numbers and calculates sum of t
   
   
   2) run plugin with argument to see how it works. Two parameters are required *-p* for plugin and *-a* for its argument e.g `apa run -p Sum -a "100+123"`
-  ```
+  ```powershell
   PS C:\apa> .\apa.exe run -p Count -a "Litwo, Ojczyzno moja, ty jestes jak zdrowie"
   43
   ```
   
   3) Run in an interactive shell mode/REPL environment: `apa interactive`. To quit, just type exit.
-  ```
+  ```powershell
   PS C:\apa> .\apa.exe interactive   Enter command to execute. Type exit to exit.
 apa> Politics("I love all political parties. Especially PO and PiS")
      I love all political parties. Especially ***** ** and ***** ***
@@ -56,10 +56,11 @@ apa> Reverse("It was a pleasure meeting you")
 apa> exit
 ```
 
+## Creating Plugins
 To provide your own plugins you need to implement interface. Interface type has to be present in your assembly and all types implementing `IPlugin` will be discovered as separate plugins. Interface does not have to be referenced from application assembly (although it would simplify relflection that is going underneath). Plugins have to be placed under `Plugins` directory. Plugis directory is expected in the same location as `apa.exe`.
 Build of solution will provide you with a directory already created and SamplePlugins.dll present in Plugins directory.
 
-```
+```csharp
 public interface IPlugin
 {
     string Description { get; }
