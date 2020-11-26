@@ -26,7 +26,7 @@ Run 'apa [command] -?|-h|--help' for more information about a command.
   1) list all available plugins: *apa list*. Depending on installed plugins you will see a list of them. e.g.
   
   ```
-Politics        Hides names of most popuplat political parties in Poland
+Politics        Hides names of most popuplar political parties in Poland
 Count           Counts characters in input string
 Reverse         Reverses input
 Sum             Splits input by `+' sign, parses numbers and calculates sum of them
