@@ -44,7 +44,7 @@ Sum             Splits input by `+' sign, parses numbers and calculates sum of t
   
   3) Run in an interactive shell mode/REPL environment: `apa interactive`. To quit, just type exit.
   ```
-  PS C:\PROJECTS\APlugginableApp\APlugginableApp\APlugginableApp\bin\Debug\netcoreapp3.1\win-x64> .\apa.exe interactive   Enter command to execute. Type exit to exit.
+  PS C:\apa> .\apa.exe interactive   Enter command to execute. Type exit to exit.
 apa> Politics("I love all political parties. Especially PO and PiS")
      I love all political parties. Especially ***** ** and ***** ***
 apa> Sum("20+123")
@@ -54,4 +54,15 @@ apa> Count("To be or not to be")
 apa> Reverse("It was a pleasure meeting you")
      uoy gniteem erusaelp a saw tI
 apa> exit
+```
+
+To provide your own plugins you need to implement interface. Interface type has to be present in your assembly and all types implementing `IPlugin` will be discovered as separate plugins. Interface does not have to be referenced from application assembly (although it would simplify relflection that is going underneath). Plugins have to be placed under `Plugins` directory. Plugis directory is expected in the same location as `apa.exe`.
+Build of solution will provide you with a directory already created and SamplePlugins.dll present in Plugins directory.
+
+```
+public interface IPlugin
+{
+    string Description { get; }
+    string Execute(string input);
+}
 ```
