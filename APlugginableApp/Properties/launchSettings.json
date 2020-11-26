@@ -1,8 +1,7 @@
 {
   "profiles": {
     "APlugginableApp": {
-      "commandName": "Project",
-      "commandLineArgs": "interactive"
+      "commandName": "Project"
     }
   }
 }

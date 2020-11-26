@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace APlugginableApp.CLIv2
 {
-    [Command(Name = "list", OptionsComparison = StringComparison.InvariantCultureIgnoreCase)]
+    [Command(Name = "list", OptionsComparison = StringComparison.InvariantCultureIgnoreCase, Description = "Lists available plugins")]
     internal class ListPluginsCmd: ApaCLIBaseCmd
     {
         private readonly IPluginProvider _pluginProvider;

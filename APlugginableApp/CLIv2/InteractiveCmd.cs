@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace APlugginableApp.CLIv2
 {
-    [Command(Name = "interactive", OptionsComparison = StringComparison.InvariantCultureIgnoreCase)]
+    [Command(Name = "interactive", OptionsComparison = StringComparison.InvariantCultureIgnoreCase, Description = "Runs interactive interpreter aka. REPL")]
     class InteractiveCmd: ApaCLIBaseCmd
     {
         private readonly IPluginInvocationParser _pluginInvocationParser;

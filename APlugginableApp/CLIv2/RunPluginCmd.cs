@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace APlugginableApp.CLIv2
 {
-    [Command(Name = "run", OptionsComparison = StringComparison.InvariantCultureIgnoreCase)]
+    [Command(Name = "run", OptionsComparison = StringComparison.InvariantCultureIgnoreCase, Description = "Runs single plugin with argument")]
     internal class RunPluginCmd : ApaCLIBaseCmd
     {
         private readonly IPluginProvider _pluginProvider;
